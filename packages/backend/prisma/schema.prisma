@@ -1,0 +1,83 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(PLAYER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams       Team[]       @relation("TeamMembers")
+  tournaments Tournament[] @relation("TournamentOrganizer")
+}
+
+model Tournament {
+  id         String   @id @default(uuid())
+  name       String
+  location   String?
+  startDate  DateTime
+  endDate    DateTime
+  archived   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  organizer   User     @relation("TournamentOrganizer", fields: [organizerId], references: [id])
+  organizerId String
+
+  teams      Team[]
+  matches    Match[]
+}
+
+model Team {
+  id           String   @id @default(uuid())
+  name         String
+  logoUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId String
+
+  players      Player[]
+  manager      User      @relation(fields: [managerId], references: [id])
+  managerId    String
+}
+
+model Player {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  number    Int?
+  team      Team     @relation(fields: [teamId], references: [id])
+  teamId    String
+}
+
+model Match {
+  id           String   @id @default(uuid())
+  date         DateTime
+  homeTeam     Team     @relation("HomeMatches", fields: [homeTeamId], references: [id])
+  homeTeamId   String
+  awayTeam     Team     @relation("AwayMatches", fields: [awayTeamId], references: [id])
+  awayTeamId   String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId String
+  homeScore    Int?
+  awayScore    Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Role {
+  ORGANIZER
+  TEAM_MANAGER
+  REFEREE
+  PLAYER
+}
